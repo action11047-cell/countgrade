@@ -323,18 +323,18 @@
   <header>
     <div class="eyebrow">日工時 · 加權計分</div>
     <h1>工時分數計算表</h1>
-    <p>場內每日上限 1.7 分・場外每日上限 2.2 分（以 8 小時為一天基準）。單筆分數 = 類別分數 × 時數 ÷ 8，四捨五入至小數第二位。同一天同分類時數合計超過 8 小時會自動警示並調整。</p>
+    <p>廠內每日上限 1.7 分・廠外每日上限 2.2 分（以 8 小時為一天基準）。單筆分數 = 類別分數 × 時數 ÷ 8，四捨五入至小數第二位。同一天同分類時數合計超過 8 小時會自動警示並調整。</p>
     <p id="savedNote" style="margin-top:6px; font-size:11px; color:#8E8A7B;"></p>
   </header>
 
   <div class="total-band">
     <div class="total-card indoor">
       <div class="num" id="totalIndoor">0.00</div>
-      <div class="lbl">場內小計</div>
+      <div class="lbl">廠內小計</div>
     </div>
     <div class="total-card outdoor">
       <div class="num" id="totalOutdoor">0.00</div>
-      <div class="lbl">場外小計</div>
+      <div class="lbl">廠外小計</div>
     </div>
     <div class="total-card grand">
       <div class="num" id="totalGrand">0.00</div>
@@ -365,7 +365,7 @@
 <script>
 (function(){
   const RATE = { indoor: 1.7, outdoor: 2.2 };
-  const CAT_LABEL = { indoor: "場內", outdoor: "場外", extra: "整料" };
+  const CAT_LABEL = { indoor: "廠內", outdoor: "廠外", extra: "整料" };
 
   let state = {
     indoor: [],
