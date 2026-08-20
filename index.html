@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>工時分數計算表</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#26241F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="工時分數">
+<style>
+  :root{
+    --paper:#F6F4EF;
+    --ink:#26241F;
+    --ink-soft:#5C594E;
+    --line: #DEDACD;
+    --indoor: #2F6F5E;
+    --indoor-soft:#E4EFEA;
+    --outdoor:#B25B2E;
+    --outdoor-soft:#F5E7DA;
+    --extra:#3D4F7A;
+    --extra-soft:#E6E9F2;
+    --danger:#B0402F;
+    --card:#FFFFFF;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", sans-serif;
+    padding-bottom:48px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap{
+    max-width:480px;
+    margin:0 auto;
+    padding:18px 12px 0;
+  }
+  header{
+    padding:6px 2px 16px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:18px;
+  }
+  header .eyebrow{
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  header h1{
+    font-size:22px;
+    margin:4px 0 6px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:0;
+    line-height:1.5;
+  }
+
+  .total-band{
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  .total-card{
+    flex:1;
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:12px 10px;
+    text-align:center;
+    border:1px solid var(--line);
+  }
+  .total-card .num{
+    font-size:22px;
+    font-weight:700;
+    font-variant-numeric: tabular-nums;
+  }
+  .total-card .lbl{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .total-card.grand{
+    background:var(--ink);
+    border-color:var(--ink);
+  }
+  .total-card.grand .num{ color:var(--paper); }
+  .total-card.grand .lbl{ color:#C9C5B6; }
+  .total-card.indoor .num{ color:var(--indoor); }
+  .total-card.outdoor .num{ color:var(--outdoor); }
+
+  section.category{
+    margin-bottom:22px;
+  }
+  .cat-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .cat-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:15px;
+    font-weight:700;
+  }
+  .dot{
+    width:9px;height:9px;border-radius:50%;
+    display:inline-block;
+    flex-shrink:0;
+  }
+  .dot.indoor{background:var(--indoor);}
+  .dot.outdoor{background:var(--outdoor);}
+  .dot.extra{background:var(--extra);}
+  .cat-sub{
+    font-size:11px;
+    color:var(--ink-soft);
+    font-weight:500;
+  }
+  .add-btn{
+    border:none;
+    border-radius:999px;
+    padding:7px 14px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    color:#fff;
+    flex-shrink:0;
+  }
+  .add-btn.indoor{background:var(--indoor);}
+  .add-btn.outdoor{background:var(--outdoor);}
+  .add-btn.extra{background:var(--extra);}
+
+  .add-btn-inline{
+    display:block;
+    width:100%;
+    margin-top:9px;
+    padding:10px 0;
+    text-align:center;
+    border-radius:10px;
+  }
+
+  .item-list{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+
+  /* compact single-line item row: date | content | hours | score | delete */
+  .item-card{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--line);
+    border-radius:10px;
+    padding:6px 6px 6px 7px;
+  }
+  .item-card.filled.indoor{border-left-color:var(--indoor);}
+  .item-card.filled.outdoor{border-left-color:var(--outdoor);}
+  .item-card.filled.extra{border-left-color:var(--extra);}
+
+  .f-date{
+    flex:0 0 auto;
+    width:112px;
+    font-size:12px;
+    padding:6px 3px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:var(--paper);
+    color:var(--ink);
+    min-width:0;
+  }
+  .f-content{
+    flex:1 1 auto;
+    min-width:0;
+    width:0;
+    font-size:13.5px;
+    font-family:inherit;
+    padding:7px 8px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:#FCFBF8;
+    color:var(--ink);
+    text-overflow:ellipsis;
+  }
+  .f-content::placeholder{ color:#A8A497; }
+  .f-hours{
+    flex:0 0 auto;
+    width:44px;
+    font-size:13px;
+    padding:6px 4px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:var(--paper);
+    text-align:center;
+    min-width:0;
+  }
+  .f-hours.score-input{ width:52px; }
+  .f-score{
+    flex:0 0 auto;
+    font-size:11.5px;
+    font-weight:700;
+    font-variant-numeric: tabular-nums;
+    padding:4px 6px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .f-score.indoor{background:var(--indoor-soft); color:var(--indoor);}
+  .f-score.outdoor{background:var(--outdoor-soft); color:var(--outdoor);}
+
+  .del-btn{
+    flex:0 0 auto;
+    border:none;
+    background:transparent;
+    color:var(--danger);
+    font-size:17px;
+    line-height:1;
+    cursor:pointer;
+    padding:4px 2px;
+  }
+
+  .empty-hint{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    padding:14px 10px;
+    text-align:center;
+    border:1px dashed var(--line);
+    border-radius:12px;
+    background:var(--card);
+  }
+
+  .cap-note{
+    font-size:11px;
+    color:var(--outdoor);
+    margin-top:6px;
+    padding-left:2px;
+  }
+
+  .export-block{
+    margin-top:26px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+  }
+  .export-block h2{
+    font-size:14px;
+    margin:0 0 10px;
+  }
+  .btn-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+  .util-btn{
+    flex:1;
+    min-width:calc(50% - 4px);
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink);
+    font-size:13px;
+    font-weight:600;
+    padding:10px 8px;
+    border-radius:10px;
+    cursor:pointer;
+  }
+  .util-btn.primary{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+  .util-btn:active{ opacity:0.7; }
+  #importFile{ display:none; }
+
+  textarea#textOutput{
+    width:100%;
+    min-height:180px;
+    font-size:12.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding:10px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:#FCFBF8;
+    color:var(--ink);
+    white-space:pre;
+    margin-top:4px;
+  }
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translateX(-50%);
+    background:var(--ink);
+    color:var(--paper);
+    padding:9px 18px;
+    border-radius:999px;
+    font-size:13px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+    z-index:50;
+    max-width:90%;
+    text-align:center;
+  }
+  .toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">日工時 · 加權計分</div>
+    <h1>工時分數計算表</h1>
+    <p>場內每日上限 1.7 分・場外每日上限 2.2 分（以 8 小時為一天基準）。單筆分數 = 類別分數 × 時數 ÷ 8，四捨五入至小數第二位。同一天同分類時數合計超過 8 小時會自動警示並調整。</p>
+    <p id="savedNote" style="margin-top:6px; font-size:11px; color:#8E8A7B;"></p>
+  </header>
+
+  <div class="total-band">
+    <div class="total-card indoor">
+      <div class="num" id="totalIndoor">0.00</div>
+      <div class="lbl">場內小計</div>
+    </div>
+    <div class="total-card outdoor">
+      <div class="num" id="totalOutdoor">0.00</div>
+      <div class="lbl">場外小計</div>
+    </div>
+    <div class="total-card grand">
+      <div class="num" id="totalGrand">0.00</div>
+      <div class="lbl">總分</div>
+    </div>
+  </div>
+
+  <section class="category" id="section-indoor"></section>
+  <section class="category" id="section-outdoor"></section>
+  <section class="category" id="section-extra"></section>
+
+  <div class="export-block">
+    <h2>匯出 / 匯入</h2>
+    <div class="btn-row">
+      <button class="util-btn primary" id="btnCopyText">產生文字並複製</button>
+      <button class="util-btn primary" id="btnDownloadTxt">產生文字檔 (.txt)</button>
+      <button class="util-btn" id="btnExportFile">匯出紀錄檔 (.json)</button>
+      <button class="util-btn" id="btnImportFile">匯入紀錄檔</button>
+      <button class="util-btn" id="btnClearAll">清空全部</button>
+    </div>
+    <input type="file" id="importFile" accept=".json,application/json,text/plain">
+    <textarea id="textOutput" readonly placeholder="按「產生文字並複製」或「產生文字檔」後，這裡會顯示紀錄文字。"></textarea>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const RATE = { indoor: 1.7, outdoor: 2.2 };
+  const CAT_LABEL = { indoor: "場內", outdoor: "場外", extra: "整料" };
+
+  let state = {
+    indoor: [],
+    outdoor: [],
+    extra: []
+  };
+  let uid = 1;
+  const newId = () => "i" + (uid++) + "_" + Date.now().toString(36);
+
+  const todayStr = () => {
+    const d = new Date();
+    const p = n => String(n).padStart(2,"0");
+    return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate());
+  };
+
+  function round2(n){
+    return Math.round((n + Number.EPSILON) * 100) / 100;
+  }
+
+  function addItem(cat){
+    if(cat === "extra"){
+      state.extra.push({ id:newId(), date: todayStr(), content:"", score:0 });
+    } else {
+      state[cat].push({ id:newId(), date: todayStr(), content:"", hours:0 });
+    }
+    render();
+  }
+
+  function removeItem(cat, id){
+    state[cat] = state[cat].filter(it => it.id !== id);
+    render();
+  }
+
+  function otherHoursSum(cat, id, date){
+    const dateKey = date || "";
+    return state[cat].filter(x => x.id !== id && (x.date || "") === dateKey)
+      .reduce((s,x) => s + (Number(x.hours) || 0), 0);
+  }
+
+  function enforceDailyHourCap(cat, id){
+    const it = state[cat].find(x => x.id === id);
+    if(!it) return false;
+    const other = otherHoursSum(cat, id, it.date);
+    const allowed = round2(Math.max(0, 8 - other));
+    const cur = Number(it.hours) || 0;
+    if(cur > allowed){
+      it.hours = 0;
+      if(allowed <= 0){
+        showToast(`⚠ ${it.date || "此日期"}的${CAT_LABEL[cat]}時數已滿 8 小時，請重新輸入`);
+      } else {
+        showToast(`⚠ 超過當日 8 小時上限（還可輸入 ${allowed} 小時），請重新輸入`);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function updateItem(cat, id, field, value){
+    const it = state[cat].find(x => x.id === id);
+    if(!it) return;
+    it[field] = value;
+    let cleared = false;
+    if(cat !== "extra" && (field === "hours" || field === "date")){
+      cleared = enforceDailyHourCap(cat, id);
+    }
+    render();
+    if(cleared){
+      const el = document.querySelector(`.f-hours[data-cat="${cat}"][data-id="${id}"]`);
+      if(el) el.focus();
+    }
+  }
+
+  function itemScore(cat, it){
+    if(cat === "extra") return round2(Number(it.score) || 0);
+    const h = Number(it.hours) || 0;
+    return round2(RATE[cat] * h / 8);
+  }
+
+  function categorySubtotal(cat){
+    if(cat === "extra"){
+      const subtotal = state.extra.reduce((s,it)=> s + itemScore(cat,it), 0);
+      return { subtotal: round2(subtotal), cappedDates: [] };
+    }
+    const byDate = {};
+    state[cat].forEach(it=>{
+      const d = it.date || "未設定日期";
+      byDate[d] = (byDate[d] || 0) + itemScore(cat, it);
+    });
+    let subtotal = 0;
+    const cappedDates = [];
+    Object.keys(byDate).forEach(d=>{
+      let dayScore = round2(byDate[d]);
+      if(dayScore > RATE[cat]){
+        cappedDates.push(d);
+        dayScore = RATE[cat];
+      }
+      subtotal += dayScore;
+    });
+    return { subtotal: round2(subtotal), cappedDates };
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  function renderCategory(cat){
+    const container = document.getElementById("section-" + cat);
+    const isExtra = cat === "extra";
+    const { subtotal, cappedDates } = categorySubtotal(cat);
+    const items = state[cat];
+
+    let html = "";
+    html += `<div class="cat-head">
+      <div class="cat-title"><span class="dot ${cat}"></span>${CAT_LABEL[cat]}
+        <span class="cat-sub">${isExtra ? "" : ("每日上限 " + RATE[cat])}${items.length ? " · " + items.length + " 筆" : ""}</span>
+      </div>
+    </div>`;
+
+    if(items.length === 0){
+      html += `<div class="empty-hint">尚無資料，點下方「+ 新增」開始登打</div>`;
+    } else {
+      html += `<div class="item-list">`;
+      items.forEach(it=>{
+        const filled = it.content && it.content.trim();
+        const sc = itemScore(cat, it);
+        html += `<div class="item-card ${filled ? "filled "+cat : ""}">
+            <input type="date" class="f-date" value="${it.date || ""}" data-field="date" data-cat="${cat}" data-id="${it.id}">
+            <input type="text" class="f-content" placeholder="工作內容" value="${escapeHtml(it.content || "")}" title="${escapeHtml(it.content || "")}" data-field="content" data-cat="${cat}" data-id="${it.id}">
+            ${isExtra
+              ? `<input type="number" step="0.01" class="f-hours score-input" placeholder="分數" value="${it.score || ""}" data-field="score" data-cat="${cat}" data-id="${it.id}">`
+              : `<input type="number" step="0.5" min="0" max="${round2(Math.max(0,8 - otherHoursSum(cat, it.id, it.date)) + (Number(it.hours)||0))}" class="f-hours" placeholder="時數" value="${it.hours || ""}" data-field="hours" data-cat="${cat}" data-id="${it.id}">
+                 <span class="f-score ${cat}">${sc.toFixed(2)}</span>`
+            }
+            <button class="del-btn" data-del="${cat}" data-id="${it.id}" aria-label="刪除">✕</button>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `<button class="add-btn-inline add-btn ${cat}" data-add="${cat}">+ 新增${CAT_LABEL[cat]}項目</button>`;
+
+    if(cappedDates.length){
+      html += `<div class="cap-note">⚠ ${cappedDates.join("、")} 已達當日上限 ${RATE[cat]} 分，超出部分不計入</div>`;
+    }
+
+    container.innerHTML = html;
+  }
+
+  function render(){
+    renderCategory("indoor");
+    renderCategory("outdoor");
+    renderCategory("extra");
+
+    const inTotal = categorySubtotal("indoor").subtotal;
+    const outTotal = categorySubtotal("outdoor").subtotal;
+    const exTotal = categorySubtotal("extra").subtotal;
+    const grand = round2(inTotal + outTotal + exTotal);
+
+    document.getElementById("totalIndoor").textContent = inTotal.toFixed(2);
+    document.getElementById("totalOutdoor").textContent = outTotal.toFixed(2);
+    document.getElementById("totalGrand").textContent = grand.toFixed(2);
+
+    bindDynamicEvents();
+    saveState();
+  }
+
+  const STORAGE_KEY = "work-score-state-v1";
+
+  function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      setSavedNote("已自動儲存在本機");
+    }catch(e){
+      console.error("saveState failed", e);
+      setSavedNote("自動儲存失敗，請用「匯出紀錄檔」備份");
+    }
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(parsed && (parsed.indoor || parsed.outdoor || parsed.extra)){
+          state = {
+            indoor: (parsed.indoor||[]).map(it=>({...it, id: it.id || newId()})),
+            outdoor: (parsed.outdoor||[]).map(it=>({...it, id: it.id || newId()})),
+            extra: (parsed.extra||[]).map(it=>({...it, id: it.id || newId()}))
+          };
+        }
+      }
+    }catch(e){
+      // 尚無先前存檔或儲存空間無法使用，維持空白狀態
+    }
+    render();
+  }
+
+  function setSavedNote(msg){
+    const el = document.getElementById("savedNote");
+    if(el) el.textContent = msg;
+  }
+
+  function bindDynamicEvents(){
+    document.querySelectorAll("[data-add]").forEach(btn=>{
+      btn.onclick = () => addItem(btn.dataset.add);
+    });
+    document.querySelectorAll("[data-del]").forEach(btn=>{
+      btn.onclick = () => removeItem(btn.dataset.del, btn.dataset.id);
+    });
+    document.querySelectorAll("[data-field]").forEach(el=>{
+      const commit = () => {
+        const { cat, id, field } = el.dataset;
+        let val = el.value;
+        if(field === "hours" || field === "score") val = val === "" ? 0 : Number(val);
+        updateItem(cat, id, field, val);
+      };
+      if(el.dataset.field === "content"){
+        // avoid full re-render on every keystroke so cursor/focus isn't lost
+        el.oninput = () => {
+          const it = state[el.dataset.cat].find(x=>x.id===el.dataset.id);
+          if(it) it.content = el.value;
+        };
+        el.onchange = () => render();
+      } else {
+        el.onchange = commit;
+      }
+    });
+  }
+
+  function showToast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(()=> t.classList.remove("show"), 1800);
+  }
+
+  function buildText(){
+    const lines = [];
+    lines.push("【工時分數紀錄】");
+    lines.push("產生時間：" + new Date().toLocaleString("zh-TW"));
+    lines.push("");
+    ["indoor","outdoor"].forEach(cat=>{
+      lines.push(`◆ ${CAT_LABEL[cat]}（每日上限 ${RATE[cat]} 分）`);
+      if(state[cat].length === 0){
+        lines.push("  （無資料）");
+      } else {
+        state[cat].slice().sort((a,b)=> (a.date||"").localeCompare(b.date||"")).forEach(it=>{
+          lines.push(`  ${it.date || "無日期"} | ${it.content || "（未填內容）"} | ${Number(it.hours)||0} 小時 | ${itemScore(cat,it).toFixed(2)} 分`);
+        });
+      }
+      lines.push(`  小計：${categorySubtotal(cat).subtotal.toFixed(2)} 分`);
+      lines.push("");
+    });
+    lines.push(`◆ 整料`);
+    if(state.extra.length === 0){
+      lines.push("  （無資料）");
+    } else {
+      state.extra.forEach(it=>{
+        lines.push(`  ${it.date || "無日期"} | ${it.content || "（未填內容）"} | ${itemScore("extra",it).toFixed(2)} 分`);
+      });
+    }
+    lines.push(`  小計：${categorySubtotal("extra").subtotal.toFixed(2)} 分`);
+    lines.push("");
+    const grand = round2(categorySubtotal("indoor").subtotal + categorySubtotal("outdoor").subtotal + categorySubtotal("extra").subtotal);
+    lines.push(`總分：${grand.toFixed(2)} 分`);
+    return lines.join("\n");
+  }
+
+  document.getElementById("btnCopyText").onclick = async () => {
+    const text = buildText();
+    const out = document.getElementById("textOutput");
+    out.value = text;
+    try{
+      await navigator.clipboard.writeText(text);
+      showToast("已複製到剪貼簿");
+    }catch(e){
+      out.focus();
+      out.select();
+      try{ document.execCommand("copy"); showToast("已複製到剪貼簿"); }
+      catch(e2){ showToast("請手動選取文字複製"); }
+    }
+  };
+
+  document.getElementById("btnDownloadTxt").onclick = () => {
+    const text = buildText();
+    document.getElementById("textOutput").value = text;
+    const blob = new Blob([text], { type:"text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const p = n => String(n).padStart(2,"0");
+    const d = new Date();
+    a.href = url;
+    a.download = `工時紀錄_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("已產生文字檔");
+  };
+
+  document.getElementById("btnExportFile").onclick = () => {
+    const data = { version:1, exportedAt: new Date().toISOString(), state };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const p = n => String(n).padStart(2,"0");
+    const d = new Date();
+    a.href = url;
+    a.download = `工時紀錄_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("已匯出紀錄檔");
+  };
+
+  document.getElementById("btnImportFile").onclick = () => {
+    document.getElementById("importFile").click();
+  };
+  document.getElementById("importFile").onchange = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const parsed = JSON.parse(reader.result);
+        const s = parsed.state || parsed;
+        if(!s || (!Array.isArray(s.indoor) && !Array.isArray(s.outdoor) && !Array.isArray(s.extra))){
+          throw new Error("找不到 indoor/outdoor/extra 資料欄位");
+        }
+        state = {
+          indoor: (s.indoor||[]).map(it=>({...it, id: it.id || newId()})),
+          outdoor: (s.outdoor||[]).map(it=>({...it, id: it.id || newId()})),
+          extra: (s.extra||[]).map(it=>({...it, id: it.id || newId()}))
+        };
+        render();
+        showToast("匯入成功");
+      }catch(err){
+        showToast("匯入失敗：" + err.message);
+      }
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  };
+
+  document.getElementById("btnClearAll").onclick = () => {
+    if(confirm("確定要清空所有已登打的資料嗎？此動作無法復原。")){
+      state = { indoor:[], outdoor:[], extra:[] };
+      render();
+      showToast("已清空");
+    }
+  };
+
+  loadState();
+})();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+  });
+}
+</script>
+
+</body>
+</html>
